@@ -56,13 +56,13 @@ def preprocess(path ,scale = 3):
 
 def prepare_data(dataset="Train",Input_img=""):
     if dataset == "Train":
-        data_dir = os.path.join(os.getcwd(), dataset) # Join the Train dir to current directory
-        data = glob.glob(os.path.join(data_dir, "*.bmp"))
+        data_dir = os.path.join(os.path.join(os.getcwd(), dataset), "DIV2K_train_HR") # Join the Train dir to current directory
+        data = glob.glob(os.path.join(data_dir, "*.png"))
     else:
         if Input_img !="":
             data = [os.path.join(os.getcwd(),Input_img)]
         else:
-            data_dir = os.path.join(os.path.join(os.getcwd(), dataset), "Set5")
+            data_dir = os.path.join(os.getcwd(), dataset)
             data = glob.glob(os.path.join(data_dir, "*.bmp"))
     return data
 
