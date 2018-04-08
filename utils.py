@@ -62,7 +62,7 @@ def prepare_data(dataset="Train",Input_img=""):
         if Input_img !="":
             data = [os.path.join(os.getcwd(),Input_img)]
         else:
-            data_dir = os.path.join(os.getcwd(), dataset)
+            data_dir = os.path.join(os.path.join(os.getcwd(), dataset), "Set5")
             data = glob.glob(os.path.join(data_dir, "*.bmp"))
     return data
 
