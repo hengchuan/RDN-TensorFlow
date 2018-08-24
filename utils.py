@@ -4,25 +4,23 @@ import tensorflow as tf
 import os 
 import glob
 import h5py
+import math
 
-def psnr(target, ref, scale):
+def PSNR(target, ref):
 	# assume RGB image
     target_data = np.array(target, dtype=np.float64)
     ref_data = np.array(ref,dtype=np.float64)
     diff = ref_data - target_data
     diff = diff.flatten('C')
     rmse = math.sqrt(np.mean(diff ** 2.) )
-    return 20*math.log10(255.0/rmse)
+    return 20*math.log10(255.0 / rmse)
 
 def imread(path):
     img = cv2.imread(path)
     return img
 
-def imsave(image, path, config):
-    if not os.path.isdir(os.path.join(os.getcwd(),config.result_dir)):
-        os.makedirs(os.path.join(os.getcwd(),config.result_dir))
-
-    cv2.imwrite(os.path.join(os.getcwd(),path),image * 255.)
+def imsave(image, path):
+    cv2.imwrite(os.path.join(os.getcwd(),path),image)
 
 def checkimage(image):
     cv2.imshow("test",image)
@@ -48,32 +46,7 @@ def preprocess(path ,scale = 3):
     label_ = modcrop(img, scale)
     input_ = cv2.resize(label_,None,fx = 1.0/scale ,fy = 1.0/scale, interpolation = cv2.INTER_CUBIC)
 
-    # kernel_size = (7, 7)
-    # sigma = 3.0
-    # input_ = cv2.GaussianBlur(input_, kernel_size, sigma);
-
     return input_, label_
-
-def prepare_data(dataset="Train",Input_img=""):
-    if dataset == "Train":
-        data_dir = os.path.join(os.path.join(os.getcwd(), dataset), "DIV2K_train_HR") # Join the Train dir to current directory
-        data = glob.glob(os.path.join(data_dir, "*.png"))
-    else:
-        if Input_img !="":
-            data = [os.path.join(os.getcwd(),Input_img)]
-        else:
-            data_dir = os.path.join(os.path.join(os.getcwd(), dataset), "Set5")
-            data = glob.glob(os.path.join(data_dir, "*.bmp"))
-    return data
-
-def load_data(is_train, test_img):
-    if is_train:
-        data = prepare_data(dataset="Train")
-    else:
-        if test_img != "":
-            return prepare_data(dataset="Test",Input_img=test_img)
-        data = prepare_data(dataset="Test")
-    return data
 
 def make_data_hf(input_, label_, config, times):
     if not os.path.isdir(os.path.join(os.getcwd(),config.checkpoint_dir)):
@@ -134,9 +107,7 @@ def make_sub_data(data, config):
             h, w = input_.shape
         
         if not config.is_train:
-            input_ = imread(data[i])
             input_ = input_ / 255.0
-            label_ = imread(data[i])
             label_ = label_ / 255.0
             make_data_hf(input_, label_, config, times)
             return data
@@ -173,13 +144,40 @@ def make_sub_data(data, config):
 
     return data
 
+def prepare_data(config):
+    if config.is_train:
+        data_dir = os.path.join(os.path.join(os.getcwd(), "Train"), "DIV2K_train_HR")
+        data = glob.glob(os.path.join(data_dir, "*.png"))
+    else:
+        if config.test_img != "":
+            data = [os.path.join(os.getcwd(), config.test_img)]
+        else:
+            data_dir = os.path.join(os.path.join(os.getcwd(), "Test"), "Set5")
+            data = glob.glob(os.path.join(data_dir, "*.bmp"))
+    return data
+
 def input_setup(config):
     """
         Read image files and make their sub-images and saved them as a h5 file format
     """
 
-    data = load_data(config.is_train, config.test_img)
+    data = prepare_data(config)
     make_sub_data(data, config)
+
+def augmentation(batch, random):
+    if random[0] < 0.3:
+        batch_flip = np.flip(batch, 1)
+    elif random[0] > 0.7:
+        batch_flip = np.flip(batch, 2)
+    else:
+        batch_flip = batch
+
+    if random[1] < 0.5:
+        batch_rot = np.rot90(batch_flip, 1, [1, 2])
+    else:
+        batch_rot = batch_flip
+
+    return batch_rot
 
 def get_data_dir(config):
     if config.is_train:
@@ -196,6 +194,22 @@ def get_batch(path, batch_idx, batch_size):
     with h5py.File(path, 'r') as hf:
         input_ = hf['input']
         label_ = hf['label']
-        batch_images = input_[batch_idx * batch_size : (batch_idx + 1) * batch_size]
-        batch_labels = label_[batch_idx * batch_size : (batch_idx + 1) * batch_size]
+
+        random_batch = np.random.rand(batch_size)
+        batch_images = np.zeros([batch_size, input_[0].shape[0], input_[0].shape[1], input_[0].shape[2]])
+        batch_labels = np.zeros([batch_size, label_[0].shape[0], label_[0].shape[1], label_[0].shape[2]])
+        for i in range(batch_size):
+            batch_images[i, :, :, :] = np.asarray(input_[random_batch[i]])
+            batch_labels[i, :, :, :] = np.asarray(label_[random_batch[i]])
+
+        random_aug = np.random.rand(2)
+        batch_images = augmentation(batch_images, random_aug)
+        batch_labels = augmentation(batch_labels, random_aug)
         return batch_images, batch_labels
+
+def get_image(path, scale):
+    image, label = preprocess(path, scale)
+    image = image[np.newaxis, :]
+    label = label[np.newaxis, :]
+    return image, label
+

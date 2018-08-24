@@ -23,22 +23,24 @@ flags.DEFINE_integer("kernel_size", 3, "the size of kernel")
 
 
 def main(_):
-    with tf.Session() as sess:
-        rdn = RDN(sess,
-                      image_size = FLAGS.image_size,
-                      is_train = FLAGS.is_train,
-                      scale = FLAGS.scale,
-                      c_dim = FLAGS.c_dim,
-                      batch_size = FLAGS.batch_size,
-                      test_img = FLAGS.test_img,
-                      D = FLAGS.D,
-                      C = FLAGS.C,
-                      G = FLAGS.G,
-                      G0 = FLAGS.G0,
-                      kernel_size = FLAGS.kernel_size
-                      )
+    rdn = RDN(tf.Session(),
+              image_size = FLAGS.image_size,
+              is_train = FLAGS.is_train,
+              scale = FLAGS.scale,
+              c_dim = FLAGS.c_dim,
+              batch_size = FLAGS.batch_size,
+              test_img = FLAGS.test_img,
+              D = FLAGS.D,
+              C = FLAGS.C,
+              G = FLAGS.G,
+              G0 = FLAGS.G0,
+              kernel_size = FLAGS.kernel_size
+              )
 
+    if rdn.is_train:
         rdn.train(FLAGS)
+    else:
+        rdn.test(FLAGS)
 
 if __name__=='__main__':
     tf.app.run()

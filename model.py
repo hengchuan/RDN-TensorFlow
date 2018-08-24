@@ -9,11 +9,12 @@ from utils import (
     get_data_dir,
     get_data_num,
     get_batch,
+    get_image,
     checkimage,
     imsave,
     imread,
-    load_data,
-    psnr
+    prepare_data,
+    PSNR
 )
 
 class RDN(object):
@@ -45,8 +46,6 @@ class RDN(object):
         self.G = G
         self.G0 = G0
         self.kernel_size = kernel_size
-
-        self.build_model()
 
     def SFEParams(self):
         G = self.G
@@ -113,39 +112,21 @@ class RDN(object):
 
         return weightsU, biasesU
     
-    def build_model(self):
-        if self.is_train:
-            self.images = tf.placeholder(tf.float32, [None, self.image_size, self.image_size, self.c_dim], name='images')
-            self.labels = tf.placeholder(tf.float32, [None, self.image_size * self.scale, self.image_size * self.scale, self.c_dim], name='labels')
-        else:
-            '''
-                Because the test need to put image to model,
-                so here we don't need do preprocess, so we set input as the same with preprocess output
-            '''
-            data = load_data(self.is_train, self.test_img)
-            input_ = imread(data[0])
-            self.h, self.w, c = input_.shape
-            self.images = tf.placeholder(tf.float32, [None, self.h, self.w, self.c_dim], name='images')
-            self.labels = tf.placeholder(tf.float32, [None, self.h * self.scale, self.w * self.scale, self.c_dim], name='labels')
+    def build_model(self, images_shape, labels_shape):
+        self.images = tf.placeholder(tf.float32, images_shape, name='images')
+        self.labels = tf.placeholder(tf.float32, labels_shape, name='labels')
 
         self.weightsS, self.biasesS = self.SFEParams()
-        
         self.weightsR, self.biasesR = self.RDBParams()
-
         self.weightsD, self.biasesD = self.DFFParams()
-
         self.weightsU, self.biasesU = self.UPNParams()
-
         self.weight_final = tf.Variable(tf.random_normal([self.kernel_size, self.kernel_size, self.c_dim, self.c_dim], stddev=np.sqrt(2.0/9/3)), name='w_f')
         self.bias_final = tf.Variable(tf.zeros([self.c_dim], name='b_f')),
         
         self.pred = self.model()
-        
         self.loss = tf.reduce_mean(tf.square(self.labels - self.pred))
-
         self.summery = tf.summary.scalar('loss', self.loss)
-
-        self.saver = tf.train.Saver() # To save checkpoint
+        self.saver = tf.train.Saver()
 
     def UPN(self, input_layer):
         x = tf.nn.conv2d(input_layer, self.weightsU['w_U_1'], strides=[1,1,1,1], padding='SAME') + self.biasesU['b_U_1']
@@ -226,44 +207,71 @@ class RDN(object):
         data_dir = get_data_dir(config)
         data_num = get_data_num(data_dir)
 
+        images_shape = [None, self.image_size, self.image_size, self.c_dim]
+        labels_shape = [None, self.image_size * self.scale, self.image_size * self.scale, self.c_dim]
+        self.build_model(images_shape, labels_shape)
         self.train_op = tf.train.AdamOptimizer(learning_rate=config.learning_rate).minimize(self.loss)
-        tf.initialize_all_variables().run() 
-
+        tf.initialize_all_variables().run(session = self.sess) 
         # merged_summary_op = tf.summary.merge_all()
         # summary_writer = tf.summary.FileWriter(config.checkpoint_dir, self.sess.graph)
 
-        counter = 0
+        counter = self.load(config.checkpoint_dir)
         time_ = time.time()
+        print("\nNow Start Training...\n")
+        for ep in range(config.epoch):
+            # Run by batch images
+            batch_idxs = data_num // config.batch_size
+            for idx in range(0, batch_idxs):
+                batch_images, batch_labels = get_batch(data_dir, idx, config.batch_size)
+                counter += 1
+                _, err = self.sess.run([self.train_op, self.loss], feed_dict={self.images: batch_images, self.labels: batch_labels})
 
-        self.load(config.checkpoint_dir)
-        # Train
-        if config.is_train:
-            print("\nNow Start Training...\n")
-            for ep in range(config.epoch):
-                # Run by batch images
-                batch_idxs = data_num // config.batch_size
-                for idx in range(0, batch_idxs):
-                    batch_images, batch_labels = get_batch(data_dir, idx, config.batch_size)
-                    counter += 1
-                    _, err = self.sess.run([self.train_op, self.loss], feed_dict={self.images: batch_images, self.labels: batch_labels})
+                if counter % 10 == 0:
+                    print("Epoch: [%2d], batch: [%2d/%2d], step: [%2d], time: [%4.4f], loss: [%.8f]" % ((ep+1), idx, batch_idxs, counter, time.time()-time_, err))
+                if counter % 100 == 0:
+                    self.save(config.checkpoint_dir, counter)
+                    # summary_str = self.sess.run(merged_summary_op)
+                    # summary_writer.add_summary(summary_str, counter)
 
-                    if counter % 10 == 0:
-                        print("Epoch: [%2d], step: [%2d], time: [%4.4f], loss: [%.8f]" % ((ep+1), counter, time.time()-time_, err))
-                    if counter % 100 == 0:
-                        self.save(config.checkpoint_dir, counter)
-                        # summary_str = self.sess.run(merged_summary_op)
-                        # summary_writer.add_summary(summary_str, counter)
-        # Test
-        else:
-            print("\nNow Start Testing...\n")
+    def test(self, config):
+        print("\nPrepare Data...\n")
+        paths = prepare_data(config)
+        data_num = len(paths)
+
+        avg_time = 0
+        avg_pasn = 0
+        print("\nNow Start Testing...\n")
+        for idx in range(data_num):
+            input_, label_ = get_image(paths[idx], config.scale)
+
+            images_shape = input_.shape
+            labels_shape = label_.shape
+            self.build_model(images_shape, labels_shape)
+            tf.initialize_all_variables().run(session=self.sess) 
+
+            self.load(config.checkpoint_dir)
+            
             time_ = time.time()
-            input_, label_ = get_batch(data_dir, 0, 1)
-            result = self.sess.run([self.pred], feed_dict={self.images: input_[0].reshape(1, self.h, self.w, self.c_dim)})
-            print "time:", (time.time() - time_)
-            x = np.squeeze(result)
-            checkimage(x)
-            print "shape:", x.shape
-            imsave(x, config.result_dir+'/result.png', config)
+            result = self.sess.run([self.pred], feed_dict={self.images: input_ / 255.0})
+            avg_time += time.time() - time_
+
+            self.sess.close()
+            tf.reset_default_graph()
+            self.sess = tf.Session()
+            
+            x = np.squeeze(result) * 255.0
+            # checkimage(x)
+            psnr = PSNR(x, label_[0])
+            avg_pasn += psnr
+
+            print "image: %d/%d, time: %.4f, psnr: %.4f" % (idx, data_num, time.time() - time_ , psnr)
+
+            if not os.path.isdir(os.path.join(os.getcwd(),config.result_dir)):
+                os.makedirs(os.path.join(os.getcwd(),config.result_dir))
+            imsave(x, config.result_dir+'/%d.png' % idx)
+
+        print "Avg. Time:", avg_time / data_num
+        print "Avg. PSNR:", avg_pasn / data_num
 
     def load(self, checkpoint_dir):
         print("\nReading Checkpoints.....\n")
@@ -274,9 +282,13 @@ class RDN(object):
         if ckpt and ckpt.model_checkpoint_path:
             ckpt_path = str(ckpt.model_checkpoint_path)
             self.saver.restore(self.sess, os.path.join(os.getcwd(), ckpt_path))
+            step = int(os.path.basename(ckpt_path).split('-')[1])
             print("\nCheckpoint Loading Success! %s\n" % ckpt_path)
         else:
+            step = 0
             print("\nCheckpoint Loading Failed! \n")
+
+        return step
 
     def save(self, checkpoint_dir, step):
         model_name = "RDN.model"
