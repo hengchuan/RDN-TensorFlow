@@ -47,13 +47,78 @@ class RDN(object):
         self.G0 = G0
         self.kernel_size = kernel_size
 
+    # def SFEParams(self):
+    #     G = self.G
+    #     G0 = self.G0
+    #     ks = self.kernel_size
+    #     weightsS = {
+    #         'w_S_1': tf.Variable(tf.random_normal([ks, ks, self.c_dim, G0], stddev=np.sqrt(2.0/ks**2/3)), name='w_S_1'),
+    #         'w_S_2': tf.Variable(tf.random_normal([ks, ks, G0, G], stddev=np.sqrt(2.0/ks**2/64)), name='w_S_2')
+    #     }
+    #     biasesS = {
+    #         'b_S_1': tf.Variable(tf.zeros([G0], name='b_S_1')),
+    #         'b_S_2': tf.Variable(tf.zeros([G], name='b_S_2'))
+    #     }
+
+    #     return weightsS, biasesS
+    
+    # def RDBParams(self):
+    #     weightsR = {}
+    #     biasesR = {}
+    #     D = self.D
+    #     C = self.C
+    #     G = self.G
+    #     G0 = self.G0
+    #     ks = self.kernel_size
+
+    #     for i in range(1, D+1):
+    #         for j in range(1, C+1):
+    #             weightsR.update({'w_R_%d_%d' % (i, j): tf.Variable(tf.random_normal([ks, ks, G * j, G], stddev=np.sqrt(2.0/ks**2/(G * j))), name='w_R_%d_%d' % (i, j))}) 
+    #             biasesR.update({'b_R_%d_%d' % (i, j): tf.Variable(tf.zeros([G], name='b_R_%d_%d' % (i, j)))})
+    #         weightsR.update({'w_R_%d_%d' % (i, C+1): tf.Variable(tf.random_normal([1, 1, G * (C+1), G], stddev=np.sqrt(2.0/1/(G * (C+1)))), name='w_R_%d_%d' % (i, C+1))})
+    #         biasesR.update({'b_R_%d_%d' % (i, C+1): tf.Variable(tf.zeros([G], name='b_R_%d_%d' % (i, C+1)))})
+
+    #     return weightsR, biasesR
+
+    # def DFFParams(self):
+    #     D = self.D
+    #     C = self.C
+    #     G = self.G
+    #     G0 = self.G0
+    #     ks = self.kernel_size
+    #     weightsD = {
+    #         'w_D_1': tf.Variable(tf.random_normal([1, 1, G * D, G0], stddev=np.sqrt(2.0/1/(G * D))), name='w_D_1'),
+    #         'w_D_2': tf.Variable(tf.random_normal([ks, ks, G0, G0], stddev=np.sqrt(2.0/ks**2/G0)), name='w_D_2')
+    #     }
+    #     biasesD = {
+    #         'b_D_1': tf.Variable(tf.zeros([G0], name='b_D_1')),
+    #         'b_D_2': tf.Variable(tf.zeros([G0], name='b_D_2'))
+    #     }
+
+    #     return weightsD, biasesD
+
+    # def UPNParams(self):
+    #     G0 = self.G0
+    #     weightsU = {
+    #         'w_U_1': tf.Variable(tf.random_normal([5, 5, G0, 64], stddev=np.sqrt(2.0/25/G0)), name='w_U_1'),
+    #         'w_U_2': tf.Variable(tf.random_normal([3, 3, 64, 32], stddev=np.sqrt(2.0/9/64)), name='w_U_2'),
+    #         'w_U_3': tf.Variable(tf.random_normal([3, 3, 32, self.c_dim * self.scale * self.scale ], stddev=np.sqrt(2.0/9/32)), name='w_U_3')
+    #     }
+    #     biasesU = {
+    #         'b_U_1': tf.Variable(tf.zeros([64], name='b_U_1')),
+    #         'b_U_2': tf.Variable(tf.zeros([32], name='b_U_2')),
+    #         'b_U_3': tf.Variable(tf.zeros([self.c_dim * self.scale * self.scale ], name='b_U_3'))
+    #     }
+
+    #     return weightsU, biasesU
+
     def SFEParams(self):
         G = self.G
         G0 = self.G0
         ks = self.kernel_size
         weightsS = {
-            'w_S_1': tf.Variable(tf.random_normal([ks, ks, self.c_dim, G0], stddev=np.sqrt(2.0/ks**2/3)), name='w_S_1'),
-            'w_S_2': tf.Variable(tf.random_normal([ks, ks, G0, G], stddev=np.sqrt(2.0/ks**2/64)), name='w_S_2')
+            'w_S_1': tf.Variable(tf.random_normal([ks, ks, self.c_dim, G0], stddev=0.01), name='w_S_1'),
+            'w_S_2': tf.Variable(tf.random_normal([ks, ks, G0, G], stddev=0.01), name='w_S_2')
         }
         biasesS = {
             'b_S_1': tf.Variable(tf.zeros([G0], name='b_S_1')),
@@ -73,9 +138,9 @@ class RDN(object):
 
         for i in range(1, D+1):
             for j in range(1, C+1):
-                weightsR.update({'w_R_%d_%d' % (i, j): tf.Variable(tf.random_normal([ks, ks, G * j, G], stddev=np.sqrt(2.0/ks**2/(G * j))), name='w_R_%d_%d' % (i, j))}) 
+                weightsR.update({'w_R_%d_%d' % (i, j): tf.Variable(tf.random_normal([ks, ks, G * j, G], stddev=0.01), name='w_R_%d_%d' % (i, j))}) 
                 biasesR.update({'b_R_%d_%d' % (i, j): tf.Variable(tf.zeros([G], name='b_R_%d_%d' % (i, j)))})
-            weightsR.update({'w_R_%d_%d' % (i, C+1): tf.Variable(tf.random_normal([1, 1, G * (C+1), G], stddev=np.sqrt(2.0/1/(G * (C+1)))), name='w_R_%d_%d' % (i, C+1))})
+            weightsR.update({'w_R_%d_%d' % (i, C+1): tf.Variable(tf.random_normal([1, 1, G * (C+1), G], stddev=0.01), name='w_R_%d_%d' % (i, C+1))})
             biasesR.update({'b_R_%d_%d' % (i, C+1): tf.Variable(tf.zeros([G], name='b_R_%d_%d' % (i, C+1)))})
 
         return weightsR, biasesR
@@ -87,8 +152,8 @@ class RDN(object):
         G0 = self.G0
         ks = self.kernel_size
         weightsD = {
-            'w_D_1': tf.Variable(tf.random_normal([1, 1, G * D, G0], stddev=np.sqrt(2.0/1/(G * D))), name='w_D_1'),
-            'w_D_2': tf.Variable(tf.random_normal([ks, ks, G0, G0], stddev=np.sqrt(2.0/ks**2/G0)), name='w_D_2')
+            'w_D_1': tf.Variable(tf.random_normal([1, 1, G * D, G0], stddev=0.01), name='w_D_1'),
+            'w_D_2': tf.Variable(tf.random_normal([ks, ks, G0, G0], stddev=0.01), name='w_D_2')
         }
         biasesD = {
             'b_D_1': tf.Variable(tf.zeros([G0], name='b_D_1')),
@@ -100,8 +165,8 @@ class RDN(object):
     def UPNParams(self):
         G0 = self.G0
         weightsU = {
-            'w_U_1': tf.Variable(tf.random_normal([5, 5, G0, 64], stddev=np.sqrt(2.0/25/G0)), name='w_U_1'),
-            'w_U_2': tf.Variable(tf.random_normal([3, 3, 64, 32], stddev=np.sqrt(2.0/9/64)), name='w_U_2'),
+            'w_U_1': tf.Variable(tf.random_normal([5, 5, G0, 64], stddev=0.01), name='w_U_1'),
+            'w_U_2': tf.Variable(tf.random_normal([3, 3, 64, 32], stddev=0.01), name='w_U_2'),
             'w_U_3': tf.Variable(tf.random_normal([3, 3, 32, self.c_dim * self.scale * self.scale ], stddev=np.sqrt(2.0/9/32)), name='w_U_3')
         }
         biasesU = {
@@ -167,6 +232,7 @@ class RDN(object):
         FDF = tf.add(FGF2, F_1)
 
         FU = self.UPN(FDF)
+        # FU = self.UPN(F_1)
         IHR = tf.nn.conv2d(FU, self.weight_final, strides=[1,1,1,1], padding='SAME') + self.bias_final
 
         return IHR
@@ -222,8 +288,12 @@ class RDN(object):
             # Run by batch images
             batch_idxs = data_num // config.batch_size
             for idx in range(0, batch_idxs):
-                batch_images, batch_labels = get_batch(data_dir, idx, config.batch_size)
+                batch_images, batch_labels = get_batch(data_dir, data_num, config.batch_size)
                 counter += 1
+
+                # checkimage(batch_images[0, :, :, :])
+                # checkimage(batch_labels[0, :, :, :])
+
                 _, err = self.sess.run([self.train_op, self.loss], feed_dict={self.images: batch_images, self.labels: batch_labels})
 
                 if counter % 10 == 0:
@@ -260,6 +330,7 @@ class RDN(object):
             self.sess = tf.Session()
             
             x = np.squeeze(result) * 255.0
+            x = np.clip(x, 0, 255)
             # checkimage(x)
             psnr = PSNR(x, label_[0])
             avg_pasn += psnr

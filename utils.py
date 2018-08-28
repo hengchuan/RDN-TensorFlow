@@ -190,17 +190,17 @@ def get_data_num(path):
         input_ = hf['input']
         return input_.shape[0]
 
-def get_batch(path, batch_idx, batch_size):
+def get_batch(path, data_num, batch_size):
     with h5py.File(path, 'r') as hf:
         input_ = hf['input']
         label_ = hf['label']
 
-        random_batch = np.random.rand(batch_size)
+        random_batch = np.random.rand(batch_size) * (data_num - 1)
         batch_images = np.zeros([batch_size, input_[0].shape[0], input_[0].shape[1], input_[0].shape[2]])
         batch_labels = np.zeros([batch_size, label_[0].shape[0], label_[0].shape[1], label_[0].shape[2]])
         for i in range(batch_size):
-            batch_images[i, :, :, :] = np.asarray(input_[random_batch[i]])
-            batch_labels[i, :, :, :] = np.asarray(label_[random_batch[i]])
+            batch_images[i, :, :, :] = np.asarray(input_[int(random_batch[i])])
+            batch_labels[i, :, :, :] = np.asarray(label_[int(random_batch[i])])
 
         random_aug = np.random.rand(2)
         batch_images = augmentation(batch_images, random_aug)
