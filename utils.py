@@ -1,19 +1,30 @@
 import cv2
 import numpy as np
-import tensorflow as tf
-import os 
-import glob
 import h5py
 import math
+import glob
+import os 
 
-def PSNR(target, ref):
-	# assume RGB image
-    target_data = np.array(target, dtype=np.float64)
-    ref_data = np.array(ref,dtype=np.float64)
-    diff = ref_data - target_data
-    diff = diff.flatten('C')
-    rmse = math.sqrt(np.mean(diff ** 2.) )
-    return 20*math.log10(255.0 / rmse)
+def rgb2ycbcr(img):
+    y = 16 + (65.481 * img[:, :, 0]) + (128.553 * img[:, :, 1]) + (24.966 * img[:, :, 2])
+    return y / 255
+
+def PSNR(target, ref, scale):
+    target_data = np.array(target, dtype=np.float32)
+    ref_data = np.array(ref, dtype=np.float32)
+
+    target_y = rgb2ycbcr(target_data)
+    ref_y = rgb2ycbcr(ref_data)
+    diff = ref_y - target_y
+
+    shave = scale
+    diff = diff[shave:-shave, shave:-shave]
+
+    mse = np.mean((diff / 255) ** 2)
+    if mse == 0:
+        return 100
+
+    return -10 * math.log10(mse)
 
 def imread(path):
     img = cv2.imread(path)
@@ -39,12 +50,16 @@ def modcrop(img, scale =3):
         img = img[0:h, 0:w]
     return img
 
-
-def preprocess(path ,scale = 3):
+def preprocess(path, scale = 3, eng = None, mdouble = None):
     img = imread(path)
-
     label_ = modcrop(img, scale)
-    input_ = cv2.resize(label_,None,fx = 1.0/scale ,fy = 1.0/scale, interpolation = cv2.INTER_CUBIC)
+    if eng is None:
+        input_ = cv2.resize(label_,None,fx = 1.0/scale ,fy = 1.0/scale, interpolation = cv2.INTER_CUBIC)
+    else:
+        input_ = np.asarray(eng.imresize(mdouble(label_.tolist()), 1.0/scale, 'bicubic'))
+
+    input_ = input_[:, :, ::-1]
+    label_ = label_[:, :, ::-1]
 
     return input_, label_
 
@@ -56,7 +71,7 @@ def make_data_hf(input_, label_, config, times):
         savepath = os.path.join(os.getcwd(), config.checkpoint_dir + '/train.h5')
     else:
         savepath = os.path.join(os.getcwd(), config.checkpoint_dir + '/test.h5')
-    
+
     if times == 0:
         if os.path.exists(savepath):
             print "\n%s have existed!\n" % (savepath)
@@ -98,9 +113,17 @@ def make_data_hf(input_, label_, config, times):
     return True
 
 def make_sub_data(data, config):
+    if config.matlab_bicubic:
+        import matlab.engine
+        eng = matlab.engine.start_matlab()
+        mdouble = matlab.double
+    else:
+        eng = None
+        mdouble = None
+
     times = 0
     for i in range(len(data)):
-        input_, label_, = preprocess(data[i], config.scale)
+        input_, label_, = preprocess(data[i], config.scale, eng, mdouble)
         if len(input_.shape) == 3:
             h, w, c = input_.shape
         else:
@@ -125,15 +148,18 @@ def make_sub_data(data, config):
                 Gxy = (gx**2 + gy**2)**0.5
                 r_gxy = float((Gxy > 10).sum()) / ((config.image_size*config.scale)**2) * 100
                 if r_gxy < 10:
-                    continue             
+                    continue
 
                 sub_label =  sub_label / 255.0
 
-                x_i = x/config.scale
-                y_i = y/config.scale
+                x_i = x / config.scale
+                y_i = y / config.scale
                 sub_input = input_[x_i: x_i + config.image_size, y_i: y_i + config.image_size]
                 sub_input = sub_input.reshape([config.image_size, config.image_size, config.c_dim])
                 sub_input = sub_input / 255.0
+
+                # checkimage(sub_input)
+                # checkimage(sub_label)
 
                 save_flag = make_data_hf(sub_input, sub_label, config, times)
                 if not save_flag:
@@ -141,6 +167,9 @@ def make_sub_data(data, config):
                 times += 1
 
         print("image: [%2d], total: [%2d]"%(i, len(data)))
+
+    if config.matlab_bicubic:
+        eng.quit()
 
     return data
 
@@ -207,9 +236,20 @@ def get_batch(path, data_num, batch_size):
         batch_labels = augmentation(batch_labels, random_aug)
         return batch_images, batch_labels
 
-def get_image(path, scale):
-    image, label = preprocess(path, scale)
+def get_image(path, scale, matlab_bicubic):
+    if matlab_bicubic:
+        import matlab.engine
+        eng = matlab.engine.start_matlab()
+        mdouble = matlab.double
+    else:
+        eng = None
+        mdouble = None
+    
+    image, label = preprocess(path, scale, eng, mdouble)
     image = image[np.newaxis, :]
     label = label[np.newaxis, :]
-    return image, label
 
+    if matlab_bicubic:
+        eng.quit()
+
+    return image, label

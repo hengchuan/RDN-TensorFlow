@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 import time
 import os
-import h5py
 
 from utils import (
     input_setup,
@@ -21,12 +20,12 @@ class RDN(object):
 
     def __init__(self,
                  sess,
-                 image_size,
                  is_train,
+                 is_eval,
+                 image_size,
+                 c_dim,
                  scale,
                  batch_size,
-                 c_dim,
-                 test_img,
                  D,
                  C,
                  G,
@@ -35,12 +34,12 @@ class RDN(object):
                  ):
 
         self.sess = sess
-        self.image_size = image_size
         self.is_train = is_train
+        self.is_eval = is_eval
+        self.image_size = image_size
         self.c_dim = c_dim
         self.scale = scale
         self.batch_size = batch_size
-        self.test_img = test_img
         self.D = D
         self.C = C
         self.G = G
@@ -199,11 +198,11 @@ class RDN(object):
         x = tf.nn.conv2d(x, self.weightsU['w_U_2'], strides=[1,1,1,1], padding='SAME') + self.biasesU['b_U_2']
         x = tf.nn.relu(x)
         x = tf.nn.conv2d(x, self.weightsU['w_U_3'], strides=[1,1,1,1], padding='SAME') + self.biasesU['b_U_3']
-       
+
         x = self.PS(x, self.scale)
-       
+
         return x
-        
+
     def RDBs(self, input_layer):
         rdb_concat = list()
         rdb_in = input_layer
@@ -291,9 +290,6 @@ class RDN(object):
                 batch_images, batch_labels = get_batch(data_dir, data_num, config.batch_size)
                 counter += 1
 
-                # checkimage(batch_images[0, :, :, :])
-                # checkimage(batch_labels[0, :, :, :])
-
                 _, err = self.sess.run([self.train_op, self.loss], feed_dict={self.images: batch_images, self.labels: batch_labels})
 
                 if counter % 10 == 0:
@@ -302,8 +298,11 @@ class RDN(object):
                     self.save(config.checkpoint_dir, counter)
                     # summary_str = self.sess.run(merged_summary_op)
                     # summary_writer.add_summary(summary_str, counter)
+                
+                if counter > 0 and counter == batch_idxs * config.epoch:
+                    return
 
-    def test(self, config):
+    def eval(self, config):
         print("\nPrepare Data...\n")
         paths = prepare_data(config)
         data_num = len(paths)
@@ -312,7 +311,7 @@ class RDN(object):
         avg_pasn = 0
         print("\nNow Start Testing...\n")
         for idx in range(data_num):
-            input_, label_ = get_image(paths[idx], config.scale)
+            input_, label_ = get_image(paths[idx], config.scale, config.matlab_bicubic)
 
             images_shape = input_.shape
             labels_shape = label_.shape
@@ -320,7 +319,51 @@ class RDN(object):
             tf.initialize_all_variables().run(session=self.sess) 
 
             self.load(config.checkpoint_dir)
-            
+
+            time_ = time.time()
+            result = self.sess.run([self.pred], feed_dict={self.images: input_ / 255.0})
+            avg_time += time.time() - time_
+
+            # import matlab.engine
+            # eng = matlab.engine.start_matlab()
+            # result = np.asarray(eng.imresize(matlab.double((input_[0, :] / 255.0).tolist()), config.scale, 'bicubic'))
+
+            self.sess.close()
+            tf.reset_default_graph()
+            self.sess = tf.Session()
+
+            x = np.squeeze(result) * 255.0
+            x = np.clip(x, 0, 255)
+            psnr = PSNR(x, label_[0], config.scale)
+            avg_pasn += psnr
+
+            print "image: %d/%d, time: %.4f, psnr: %.4f" % (idx, data_num, time.time() - time_ , psnr)
+
+            if not os.path.isdir(os.path.join(os.getcwd(),config.result_dir)):
+                os.makedirs(os.path.join(os.getcwd(),config.result_dir))
+            imsave(x[:, :, ::-1], config.result_dir+'/%d.png' % idx)
+
+        print "Avg. Time:", avg_time / data_num
+        print "Avg. PSNR:", avg_pasn / data_num
+
+    def test(self, config):
+        print("\nPrepare Data...\n")
+        paths = prepare_data(config)
+        data_num = len(paths)
+
+        avg_time = 0
+        print("\nNow Start Testing...\n")
+        for idx in range(data_num):
+            input_ = imread(paths[idx])[:, :, ::-1]
+            input_ = input_[np.newaxis, :]
+
+            images_shape = input_.shape
+            labels_shape = input_.shape * np.asarray([1, self.scale, self.scale, 1])
+            self.build_model(images_shape, labels_shape)
+            tf.initialize_all_variables().run(session=self.sess) 
+
+            self.load(config.checkpoint_dir)
+
             time_ = time.time()
             result = self.sess.run([self.pred], feed_dict={self.images: input_ / 255.0})
             avg_time += time.time() - time_
@@ -328,21 +371,16 @@ class RDN(object):
             self.sess.close()
             tf.reset_default_graph()
             self.sess = tf.Session()
-            
+
             x = np.squeeze(result) * 255.0
             x = np.clip(x, 0, 255)
-            # checkimage(x)
-            psnr = PSNR(x, label_[0])
-            avg_pasn += psnr
-
-            print "image: %d/%d, time: %.4f, psnr: %.4f" % (idx, data_num, time.time() - time_ , psnr)
+            checkimage(np.uint8(x))
 
             if not os.path.isdir(os.path.join(os.getcwd(),config.result_dir)):
                 os.makedirs(os.path.join(os.getcwd(),config.result_dir))
-            imsave(x, config.result_dir+'/%d.png' % idx)
+            imsave(x[:, :, ::-1], config.result_dir+'/%d.png' % idx)
 
         print "Avg. Time:", avg_time / data_num
-        print "Avg. PSNR:", avg_pasn / data_num
 
     def load(self, checkpoint_dir):
         print("\nReading Checkpoints.....\n")

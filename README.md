@@ -16,6 +16,8 @@ Extract and place all the images in RDN-TensorFlow/Train/DIV2K_train_HR.
 `python main.py`
 ### Test
 `python main.py --is_train=False`
+
+If you want to use the resize function in MATLAB when generating training data, you need to install [MATLAB API for Python](http://www.mathworks.com/help/matlab/matlab-engine-for-python.html), and run the script with option `--matlab_bicubic=True`.
   
 ## References
 - [kweisamx/TensorFlow-ESPCN](https://github.com/kweisamx/TensorFlow-ESPCN)
