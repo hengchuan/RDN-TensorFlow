@@ -1,0 +1,2 @@
+model_checkpoint_path: "RDN.model-206000"
+all_model_checkpoint_paths: "RDN.model-206000"
