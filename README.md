@@ -2,11 +2,11 @@
 A TensorFlow implementation of CVPR 2018 paper [Residual Dense Network for Image Super-Resolution](https://arxiv.org/abs/1802.08797).
   
 ## Prerequisites
-- Python 2.7
-- TensorFlow
-- Numpy
-- OpenCV
-- h5py
+- Python-2.7
+- TensorFlow-1.10.0
+- Numpy-1.14.5
+- OpenCV-2.4.9.1
+- h5py-2.6.0
   
 ## Usage
 ### Prepare data
