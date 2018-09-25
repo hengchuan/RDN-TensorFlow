@@ -3,8 +3,8 @@ A TensorFlow implementation of CVPR 2018 paper [Residual Dense Network for Image
   
 ## Prerequisites
 - Python 2.7
-- Numpy
 - TensorFlow
+- Numpy
 - OpenCV
 - h5py
   

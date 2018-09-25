@@ -189,7 +189,7 @@ class RDN(object):
         
         self.pred = self.model()
         self.loss = tf.reduce_mean(tf.square(self.labels - self.pred))
-        self.summery = tf.summary.scalar('loss', self.loss)
+        self.summary = tf.summary.scalar('loss', self.loss)
         self.saver = tf.train.Saver()
 
     def UPN(self, input_layer):
@@ -276,7 +276,7 @@ class RDN(object):
         labels_shape = [None, self.image_size * self.scale, self.image_size * self.scale, self.c_dim]
         self.build_model(images_shape, labels_shape)
         self.train_op = tf.train.AdamOptimizer(learning_rate=config.learning_rate).minimize(self.loss)
-        tf.initialize_all_variables().run(session = self.sess) 
+        tf.global_variables_initializer().run(session = self.sess) 
         # merged_summary_op = tf.summary.merge_all()
         # summary_writer = tf.summary.FileWriter(config.checkpoint_dir, self.sess.graph)
 
@@ -316,7 +316,7 @@ class RDN(object):
             images_shape = input_.shape
             labels_shape = label_.shape
             self.build_model(images_shape, labels_shape)
-            tf.initialize_all_variables().run(session=self.sess) 
+            tf.global_variables_initializer().run(session=self.sess) 
 
             self.load(config.checkpoint_dir)
 
@@ -354,13 +354,14 @@ class RDN(object):
         avg_time = 0
         print("\nNow Start Testing...\n")
         for idx in range(data_num):
-            input_ = imread(paths[idx])[:, :, ::-1]
+            input_ = imread(paths[idx])
+            input_ = input_[:, :, ::-1]
             input_ = input_[np.newaxis, :]
 
             images_shape = input_.shape
             labels_shape = input_.shape * np.asarray([1, self.scale, self.scale, 1])
             self.build_model(images_shape, labels_shape)
-            tf.initialize_all_variables().run(session=self.sess) 
+            tf.global_variables_initializer().run(session=self.sess) 
 
             self.load(config.checkpoint_dir)
 
@@ -374,11 +375,12 @@ class RDN(object):
 
             x = np.squeeze(result) * 255.0
             x = np.clip(x, 0, 255)
+            x = x[:, :, ::-1]
             checkimage(np.uint8(x))
 
             if not os.path.isdir(os.path.join(os.getcwd(),config.result_dir)):
                 os.makedirs(os.path.join(os.getcwd(),config.result_dir))
-            imsave(x[:, :, ::-1], config.result_dir+'/%d.png' % idx)
+            imsave(x, config.result_dir+'/%d.png' % idx)
 
         print "Avg. Time:", avg_time / data_num
 
