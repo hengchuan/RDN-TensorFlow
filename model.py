@@ -269,7 +269,7 @@ class RDN(object):
     def train(self, config):
         print("\nPrepare Data...\n")
         input_setup(config)
-        data_dir = get_data_dir(config)
+        data_dir = get_data_dir(config.checkpoint_dir, config.is_train)
         data_num = get_data_num(data_dir)
 
         images_shape = [None, self.image_size, self.image_size, self.c_dim]

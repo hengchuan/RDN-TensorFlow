@@ -208,11 +208,11 @@ def augmentation(batch, random):
 
     return batch_rot
 
-def get_data_dir(config):
-    if config.is_train:
-        return os.path.join('./{}'.format(config.checkpoint_dir), "train.h5")
+def get_data_dir(checkpoint_dir, is_train):
+    if is_train:
+        return os.path.join('./{}'.format(checkpoint_dir), "train.h5")
     else:
-        return os.path.join('./{}'.format(config.checkpoint_dir), "test.h5")
+        return os.path.join('./{}'.format(checkpoint_dir), "test.h5")
 
 def get_data_num(path):
      with h5py.File(path, 'r') as hf:
