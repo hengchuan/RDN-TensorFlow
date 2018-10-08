@@ -175,13 +175,13 @@ def make_sub_data(data, config):
 
 def prepare_data(config):
     if config.is_train:
-        data_dir = os.path.join(os.path.join(os.getcwd(), "Train"), "DIV2K_train_HR")
+        data_dir = os.path.join(os.path.join(os.getcwd(), "Train"), config.train_set)
         data = glob.glob(os.path.join(data_dir, "*.png"))
     else:
         if config.test_img != "":
             data = [os.path.join(os.getcwd(), config.test_img)]
         else:
-            data_dir = os.path.join(os.path.join(os.getcwd(), "Test"), "Set5")
+            data_dir = os.path.join(os.path.join(os.getcwd(), "Test"), config.test_set)
             data = glob.glob(os.path.join(data_dir, "*.bmp"))
     return data
 
