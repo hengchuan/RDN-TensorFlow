@@ -276,7 +276,7 @@ class RDN(object):
         labels_shape = [None, self.image_size * self.scale, self.image_size * self.scale, self.c_dim]
         self.build_model(images_shape, labels_shape)
         self.train_op = tf.train.AdamOptimizer(learning_rate=config.learning_rate).minimize(self.loss)
-        tf.global_variables_initializer().run(session = self.sess) 
+        tf.global_variables_initializer().run(session=self.sess) 
         # merged_summary_op = tf.summary.merge_all()
         # summary_writer = tf.summary.FileWriter(config.checkpoint_dir, self.sess.graph)
 
@@ -326,7 +326,9 @@ class RDN(object):
 
             # import matlab.engine
             # eng = matlab.engine.start_matlab()
+            # time_ = time.time()
             # result = np.asarray(eng.imresize(matlab.double((input_[0, :] / 255.0).tolist()), config.scale, 'bicubic'))
+            # avg_time += time.time() - time_
 
             self.sess.close()
             tf.reset_default_graph()
