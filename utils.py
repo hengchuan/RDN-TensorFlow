@@ -68,9 +68,9 @@ def make_data_hf(input_, label_, config, times):
         os.makedirs(os.path.join(os.getcwd(),config.checkpoint_dir))
 
     if config.is_train:
-        savepath = os.path.join(os.getcwd(), config.checkpoint_dir + '/train.h5')
+        savepath = os.path.join(os.path.join(os.getcwd(), config.checkpoint_dir), 'train.h5')
     else:
-        savepath = os.path.join(os.getcwd(), config.checkpoint_dir + '/test.h5')
+        savepath = os.path.join(os.path.join(os.getcwd(), config.checkpoint_dir), 'test.h5')
 
     if times == 0:
         if os.path.exists(savepath):
@@ -210,9 +210,9 @@ def augmentation(batch, random):
 
 def get_data_dir(checkpoint_dir, is_train):
     if is_train:
-        return os.path.join('./{}'.format(checkpoint_dir), "train.h5")
+        return os.path.join(os.path.join(os.getcwd(), checkpoint_dir), 'train.h5')
     else:
-        return os.path.join('./{}'.format(checkpoint_dir), "test.h5")
+        return os.path.join(os.path.join(os.getcwd(), checkpoint_dir), 'test.h5')
 
 def get_data_num(path):
      with h5py.File(path, 'r') as hf:
