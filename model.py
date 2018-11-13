@@ -339,14 +339,14 @@ class RDN(object):
             psnr = PSNR(x, label_[0], config.scale)
             avg_pasn += psnr
 
-            print "image: %d/%d, time: %.4f, psnr: %.4f" % (idx, data_num, time.time() - time_ , psnr)
+            print("image: %d/%d, time: %.4f, psnr: %.4f" % (idx, data_num, time.time() - time_ , psnr))
 
             if not os.path.isdir(os.path.join(os.getcwd(),config.result_dir)):
                 os.makedirs(os.path.join(os.getcwd(),config.result_dir))
             imsave(x[:, :, ::-1], config.result_dir+'/%d.png' % idx)
 
-        print "Avg. Time:", avg_time / data_num
-        print "Avg. PSNR:", avg_pasn / data_num
+        print("Avg. Time:", avg_time / data_num)
+        print("Avg. PSNR:", avg_pasn / data_num)
 
     def test(self, config):
         print("\nPrepare Data...\n")
@@ -384,7 +384,7 @@ class RDN(object):
                 os.makedirs(os.path.join(os.getcwd(),config.result_dir))
             imsave(x, config.result_dir+'/%d.png' % idx)
 
-        print "Avg. Time:", avg_time / data_num
+        print("Avg. Time:", avg_time / data_num)
 
     def load(self, checkpoint_dir):
         print("\nReading Checkpoints.....\n")

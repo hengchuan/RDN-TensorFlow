@@ -74,7 +74,7 @@ def make_data_hf(input_, label_, config, times):
 
     if times == 0:
         if os.path.exists(savepath):
-            print "\n%s have existed!\n" % (savepath)
+            print("\n%s have existed!\n" % (savepath))
             return False
         else:
             hf = h5py.File(savepath, 'w')
