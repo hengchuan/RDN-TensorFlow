@@ -1,5 +1,6 @@
 # RDN-TensorFlow
-A TensorFlow implementation of CVPR 2018 paper [Residual Dense Network for Image Super-Resolution](https://arxiv.org/abs/1802.08797).
+A TensorFlow implementation of CVPR 2018 paper [Residual Dense Network for Image Super-Resolution](https://arxiv.org/abs/1802.08797).  
+Official implementation: [Torch code for our CVPR 2018 paper "Residual Dense Network for Image Super-Resolution" (Spotlight)](https://github.com/yulunzhang/RDN)
   
 ## Prerequisites
 - Python-3.5
