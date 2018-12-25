@@ -188,7 +188,8 @@ class RDN(object):
         self.bias_final = tf.Variable(tf.zeros([self.c_dim], name='b_f')),
         
         self.pred = self.model()
-        self.loss = tf.reduce_mean(tf.square(self.labels - self.pred))
+        # self.loss = tf.reduce_mean(tf.square(self.labels - self.pred))
+        self.loss = tf.reduce_mean(tf.abs(self.labels - self.pred))
         self.summary = tf.summary.scalar('loss', self.loss)
         self.saver = tf.train.Saver()
 
