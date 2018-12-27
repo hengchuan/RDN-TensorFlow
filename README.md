@@ -17,7 +17,8 @@ Extract and place all the images in RDN-TensorFlow/Train/DIV2K_train_HR.
 `python main.py`
 ### Test
 `python main.py --is_train=False`
-
+  
+## Notice
 If you want to use the resize function in MATLAB when generating training data and testing images as the pretrained model used, you need to install [MATLAB API for Python](http://www.mathworks.com/help/matlab/matlab-engine-for-python.html), and run the script with option `--matlab_bicubic=True`.
   
 If you want to take an original image as the input of RDN directly, you could run the script like `python main.py --is_train=False --is_eval=False --test_img=Test/Set5/butterfly_GT.bmp`.
