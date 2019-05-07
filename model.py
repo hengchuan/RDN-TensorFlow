@@ -271,7 +271,11 @@ class RDN(object):
 
     def train(self, config):
         print("\nPrepare Data...\n")
-        input_setup(config)
+        data = input_setup(config)
+        if len(data) == 0:
+            print("\nCan Not Find Training Data!\n")
+            return
+
         data_dir = get_data_dir(config.checkpoint_dir, config.is_train)
         data_num = get_data_num(data_dir)
         batch_num = data_num // config.batch_size

@@ -40,13 +40,13 @@ def checkimage(image):
 def modcrop(img, scale =3):
     if len(img.shape) ==3:
         h, w, _ = img.shape
-        h = (h / scale) * scale
-        w = (w / scale) * scale
+        h = int((h / scale)) * scale
+        w = int((w / scale)) * scale
         img = img[0:h, 0:w, :]
     else:
         h, w = img.shape
-        h = (h / scale) * scale
-        w = (w / scale) * scale
+        h = int((h / scale)) * scale
+        w = int((w / scale)) * scale
         img = img[0:h, 0:w]
     return img
 
@@ -128,12 +128,6 @@ def make_sub_data(data, config):
             h, w, c = input_.shape
         else:
             h, w = input_.shape
-        
-        if not config.is_train:
-            input_ = input_ / 255.0
-            label_ = label_ / 255.0
-            make_data_hf(input_, label_, config, times)
-            return data
 
         for x in range(0, h * config.scale - config.image_size * config.scale + 1, config.stride * config.scale):
             for y in range(0, w * config.scale - config.image_size * config.scale + 1, config.stride * config.scale):
@@ -152,8 +146,8 @@ def make_sub_data(data, config):
 
                 sub_label =  sub_label / 255.0
 
-                x_i = x / config.scale
-                y_i = y / config.scale
+                x_i = int(x / config.scale)
+                y_i = int(y / config.scale)
                 sub_input = input_[x_i: x_i + config.image_size, y_i: y_i + config.image_size]
                 sub_input = sub_input.reshape([config.image_size, config.image_size, config.c_dim])
                 sub_input = sub_input / 255.0
@@ -163,15 +157,13 @@ def make_sub_data(data, config):
 
                 save_flag = make_data_hf(sub_input, sub_label, config, times)
                 if not save_flag:
-                    return data
+                    return
                 times += 1
 
         print("image: [%2d], total: [%2d]"%(i, len(data)))
 
     if config.matlab_bicubic:
         eng.quit()
-
-    return data
 
 def prepare_data(config):
     if config.is_train:
@@ -192,6 +184,7 @@ def input_setup(config):
 
     data = prepare_data(config)
     make_sub_data(data, config)
+    return data
 
 def augmentation(batch, random):
     if random[0] < 0.3:
