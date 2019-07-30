@@ -1,9 +1,16 @@
+import PIL
 import cv2
 import numpy as np
 import h5py
 import math
 import glob
 import os 
+
+def PIL_resize(image, ratio, mode):
+  PIL_image = PIL.Image.fromarray(image.astype(dtype=np.uint8))
+  PIL_image_resize = PIL_image.resize((int(PIL_image.size[0] * ratio), int(PIL_image.size[1] * ratio)), mode)
+  image_resize = (np.array(PIL_image_resize)).astype(dtype=np.uint8)
+  return image_resize
 
 def rgb2ycbcr(img):
     y = 16 + (65.481 * img[:, :, 0]) + (128.553 * img[:, :, 1]) + (24.966 * img[:, :, 2])
@@ -54,7 +61,8 @@ def preprocess(path, scale = 3, eng = None, mdouble = None):
     img = imread(path)
     label_ = modcrop(img, scale)
     if eng is None:
-        input_ = cv2.resize(label_,None,fx = 1.0/scale ,fy = 1.0/scale, interpolation = cv2.INTER_CUBIC)
+        # input_ = cv2.resize(label_, None, fx=1.0/scale, fy=1.0/scale, interpolation=cv2.INTER_CUBIC)
+        input_ = PIL_resize(label_, 1.0/scale, PIL.Image.BICUBIC)
     else:
         input_ = np.asarray(eng.imresize(mdouble(label_.tolist()), 1.0/scale, 'bicubic'))
 
@@ -68,7 +76,7 @@ def make_data_hf(input_, label_, config, times):
         os.makedirs(os.path.join(os.getcwd(),config.checkpoint_dir))
 
     if config.is_train:
-        savepath = os.path.join(os.path.join(os.getcwd(), config.checkpoint_dir), 'train.h5')
+        savepath = os.path.join(os.path.join(os.getcwd(), config.checkpoint_dir), 'train_x%d.h5' % config.scale)
     else:
         savepath = os.path.join(os.path.join(os.getcwd(), config.checkpoint_dir), 'test.h5')
 
@@ -174,7 +182,7 @@ def prepare_data(config):
             data = [os.path.join(os.getcwd(), config.test_img)]
         else:
             data_dir = os.path.join(os.path.join(os.getcwd(), "Test"), config.test_set)
-            data = glob.glob(os.path.join(data_dir, "*.bmp"))
+            data = glob.glob(os.path.join(data_dir, "*.png"))
     return data
 
 def input_setup(config):
@@ -201,9 +209,9 @@ def augmentation(batch, random):
 
     return batch_rot
 
-def get_data_dir(checkpoint_dir, is_train):
+def get_data_dir(checkpoint_dir, is_train, scale):
     if is_train:
-        return os.path.join(os.path.join(os.getcwd(), checkpoint_dir), 'train.h5')
+        return os.path.join(os.path.join(os.getcwd(), checkpoint_dir), 'train_x%d.h5' % scale)
     else:
         return os.path.join(os.path.join(os.getcwd(), checkpoint_dir), 'test.h5')
 

@@ -1,4 +1,5 @@
-checkpoint_bak/
 result/
 Train/
 Test/
+*.pyc
+__pycache__

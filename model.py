@@ -276,7 +276,7 @@ class RDN(object):
             print("\nCan Not Find Training Data!\n")
             return
 
-        data_dir = get_data_dir(config.checkpoint_dir, config.is_train)
+        data_dir = get_data_dir(config.checkpoint_dir, config.is_train, config.scale)
         data_num = get_data_num(data_dir)
         batch_num = data_num // config.batch_size
 

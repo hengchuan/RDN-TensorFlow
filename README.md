@@ -3,7 +3,7 @@ A TensorFlow implementation of CVPR 2018 paper [Residual Dense Network for Image
 Official implementation: [Torch code for our CVPR 2018 paper "Residual Dense Network for Image Super-Resolution" (Spotlight)](https://github.com/yulunzhang/RDN)
   
 ## Prerequisites
-- Python-2.7(Python-3.5 for branch python3)
+- Python-2.7
 - TensorFlow-1.10.0
 - Numpy-1.14.5
 - OpenCV-2.4.9.1
