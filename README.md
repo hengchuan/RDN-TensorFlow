@@ -6,6 +6,7 @@ Official implementation: [Torch code for our CVPR 2018 paper "Residual Dense Net
 - TensorFlow-1.10.0
 - Numpy-1.14.5
 - OpenCV-2.4.9.1
+- PIL-3.1.2
 - h5py-2.6.0
   
 ## Usage
